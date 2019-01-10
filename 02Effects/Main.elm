@@ -18,11 +18,6 @@ type alias Response =
     }
 
 
-jokeDecoder : Json.Decode.Decoder String
-jokeDecoder =
-    Json.Decode.at [ "value", "joke" ] Json.Decode.string
-
-
 fullJokeDecoder : Json.Decode.Decoder Response
 fullJokeDecoder =
     Json.Decode.map3 Response
