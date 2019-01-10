@@ -8,23 +8,54 @@ import Json.Decode
 
 
 
+-- decoder
+
+
+type alias Response =
+    { id : Int
+    , joke : String
+    , categories : List String
+    }
+
+
+jokeDecoder : Json.Decode.Decoder String
+jokeDecoder =
+    Json.Decode.at [ "value", "joke" ] Json.Decode.string
+
+
+fullJokeDecoder : Json.Decode.Decoder Response
+fullJokeDecoder =
+    Json.Decode.map3 Response
+        (Json.Decode.field "id" Json.Decode.int)
+        (Json.Decode.field "joke" Json.Decode.string)
+        (Json.Decode.field "categories" (Json.Decode.list Json.Decode.string))
+        |> Json.Decode.at [ "value" ]
+
+
+
 -- model
 
 
 type alias Model =
-    String
+    { text : String
+    , categories : List String
+    , error : Maybe String
+    }
 
 
 initModel : Model
 initModel =
-    "Finding a joke..."
+    { text = "Finding a joke..."
+    , categories = []
+    , error = Nothing
+    }
 
 
 getRandomJoke : Cmd Msg
 getRandomJoke =
     Http.get
         { url = "https://api.icndb.com/jokes/random"
-        , expect = Http.expectString GotText
+        , expect = Http.expectJson GotJoke fullJokeDecoder
         }
 
 
@@ -38,18 +69,38 @@ init _ =
 
 
 type Msg
-    = GotText (Result Http.Error String)
+    = GotJoke (Result Http.Error Response)
     | FetchNewQuote
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        GotText (Ok joke) ->
-            ( joke, Cmd.none )
+        GotJoke (Ok response) ->
+            ( { model
+                | error = Nothing
+                , text = response.joke
+                , categories = response.categories
+              }
+            , Cmd.none
+            )
 
-        GotText (Err err) ->
-            ( model, Cmd.none )
+        GotJoke (Err err) ->
+            case err of
+                Http.BadUrl url ->
+                    ( { model | error = Just ("Bad url: " ++ url) }, Cmd.none )
+
+                Http.Timeout ->
+                    ( { model | error = Just "Timeout. " }, Cmd.none )
+
+                Http.NetworkError ->
+                    ( { model | error = Just "Network Error " }, Cmd.none )
+
+                Http.BadStatus statusNumber ->
+                    ( { model | error = Just ("Bad Status " ++ String.fromInt statusNumber) }, Cmd.none )
+
+                Http.BadBody body ->
+                    ( { model | error = Just ("Bad Body: " ++ body) }, Cmd.none )
 
         FetchNewQuote ->
             ( model, getRandomJoke )
@@ -68,7 +119,15 @@ view model =
             [ Html.text "Chuck Norris Random Quote" ]
         , Html.blockquote
             []
-            [ Html.text model ]
+            [ Html.text
+                (case model.error of
+                    Nothing ->
+                        model.text
+
+                    Just error ->
+                        Maybe.withDefault "" model.error
+                )
+            ]
         , Html.button
             [ onClick FetchNewQuote ]
             [ Html.text "Fetch new" ]
