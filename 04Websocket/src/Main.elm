@@ -1,12 +1,14 @@
 -- module Main exposing (Model)
+
+
 port module Main exposing (main)
 
 import Browser
+import Cmd.Extra exposing (addCmd, addCmds, withCmd, withCmds, withNoCmd)
 import Debug
 import Html exposing (Html, a, button, div, h1, input, p, span, text)
 import Html.Attributes exposing (checked, disabled, href, size, style, type_, value)
 import Html.Events exposing (onClick, onInput)
-import Cmd.Extra exposing (addCmd, addCmds, withCmd, withCmds, withNoCmd)
 import Json.Encode exposing (Value)
 import PortFunnel.WebSocket as WebSocket exposing (Response(..))
 import PortFunnels exposing (FunnelDict, Handler(..), State)
@@ -17,9 +19,11 @@ handlers =
     [ WebSocketHandler socketHandler
     ]
 
+
 funnelDict : FunnelDict Model Msg
 funnelDict =
     PortFunnels.makeFunnelDict handlers getCmdPort
+
 
 {-| Get a possibly simulated output port.
 -}
@@ -59,7 +63,10 @@ type alias Model =
     , error : Maybe String
     }
 
-test = Debug.log "number" 1 
+
+test =
+    Debug.log "number" 1
+
 
 initModel : Model
 initModel =
@@ -178,9 +185,11 @@ update msg model =
                 Ok res ->
                     res
 
+
 send : Model -> WebSocket.Message -> Cmd Msg
 send model message =
     WebSocket.send (getCmdPort WebSocket.moduleName model) message
+
 
 doIsLoaded : Model -> Model
 doIsLoaded model =
@@ -379,7 +388,9 @@ view model =
         ]
 
 
+
 -- Subscriptions
+
 
 subscriptions : Model -> Sub Msg
 subscriptions =
