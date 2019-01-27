@@ -45,7 +45,7 @@ cmdPort =
 
 defaultUrl : String
 defaultUrl =
-    "wss://echo.websocket.org"
+    "ws://localhost:5000/"
 
 
 type alias Model =
@@ -53,7 +53,6 @@ type alias Model =
     , time : String
 
     -- From elm-websocket-client example
-    , send : String
     , log : List String
     , url : String
     , useSimulator : Bool
@@ -74,7 +73,6 @@ initModel =
     , time = ""
 
     -- From elm-websocket-client example
-    , send = "Hello World!"
     , log = []
     , url = defaultUrl
     , useSimulator = True
@@ -95,22 +93,19 @@ init _ =
 
 
 type Msg
-    = UpdateSend String
-    | UpdateUrl String
+    = UpdateUrl String
     | ToggleUseSimulator
     | ToggleAutoReopen
     | Connect
     | Close
-    | Send
+    | Send_start
+    | Send_stop
     | Process Value
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        UpdateSend newsend ->
-            { model | send = newsend } |> withNoCmd
-
         UpdateUrl url ->
             { model | url = url } |> withNoCmd
 
@@ -156,13 +151,23 @@ update msg model =
                         |> send model
                     )
 
-        Send ->
+        Send_start ->
             { model
                 | log =
-                    ("Sending \"" ++ model.send ++ "\"") :: model.log
+                    "Sending 'start'" :: model.log
             }
                 |> withCmd
-                    (WebSocket.makeSend model.key model.send
+                    (WebSocket.makeSend model.key "start"
+                        |> send model
+                    )
+
+        Send_stop ->
+            { model
+                | log =
+                    "Sending 'stop'" :: model.log
+            }
+                |> withCmd
+                    (WebSocket.makeSend model.key "stop"
                         |> send model
                     )
 
@@ -302,18 +307,17 @@ view model =
         ]
         [ h1 [] [ text "PortFunnel.WebSocket Example" ]
         , p []
-            [ input
-                [ value model.send
-                , onInput UpdateSend
-                , size 50
-                ]
-                []
-            , text " "
+            [ text " "
             , button
-                [ onClick Send
+                [ onClick Send_start
                 , disabled (not isConnected)
                 ]
-                [ text "Send" ]
+                [ text "Send 'start'" ]
+            , button
+                [ onClick Send_stop
+                , disabled (not isConnected)
+                ]
+                [ text "Send 'stop'" ]
             ]
         , p []
             [ b "url: "
@@ -365,25 +369,13 @@ view model =
             , docp <|
                 "Fill in the 'url' and click 'Connect' to connect to a real server."
                     ++ " This will only work if you've connected the port JavaScript code."
-            , docp "Fill in the text and click 'Send' to send a message."
+            , docp "Start your local websocket server at localhost:5000."
+            , docp "Click 'Send start' to start streaming or 'Send stop' to stop streaming."
             , docp "Click 'Close' to close the connection."
-            , docp <|
-                "If the 'use simulator' checkbox is checked at startup,"
-                    ++ " then you're either runing from 'elm reactor' or"
-                    ++ " the JavaScript code got an error starting."
             , docp <|
                 "Uncheck the 'auto reopen' checkbox to report when the"
                     ++ " connection is lost unexpectedly, rather than the deault"
                     ++ " of attempting to reconnect."
-            ]
-        , p []
-            [ b "Package: "
-            , a [ href "https://package.elm-lang.org/packages/billstclair/elm-websocket-client/latest" ]
-                [ text "billstclair/elm-websocket-client" ]
-            , br
-            , b "GitHub: "
-            , a [ href "https://github.com/billstclair/elm-websocket-client" ]
-                [ text "github.com/billstclair/elm-websocket-client" ]
             ]
         ]
 
