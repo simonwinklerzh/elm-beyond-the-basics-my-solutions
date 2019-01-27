@@ -1,162 +1,99 @@
-module Main exposing (..)
+module Main exposing (Model, Msg(..), init, main, subscriptions, update, view, viewLink)
 
+import Browser
+import Browser.Navigation as Nav
 import Html exposing (..)
-import Html.Events exposing (..)
-import Navigation exposing (..)
+import Html.Attributes exposing (..)
+import Url
 
 
--- model
+
+-- MAIN
 
 
-type Page
-    = LeaderBoard
-    | AddRunner
-    | Login
-    | NotFound
+main : Program () Model Msg
+main =
+    Browser.application
+        { init = init
+        , view = view
+        , update = update
+        , subscriptions = subscriptions
+        , onUrlChange = UrlChanged
+        , onUrlRequest = LinkClicked
+        }
+
+
+
+-- MODEL
 
 
 type alias Model =
-    { page : Page
+    { key : Nav.Key
+    , url : Url.Url
     }
 
 
-initModel : Page -> Model
-initModel page =
-    { page = page
-    }
-
-
-init : Location -> ( Model, Cmd Msg )
-init location =
-    let
-        page =
-            hashToPage location.hash
-    in
-        ( initModel page, Cmd.none )
+init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
+init flags url key =
+    ( Model key url, Cmd.none )
 
 
 
--- update
+-- UPDATE
 
 
 type Msg
-    = Navigate Page
-    | ChangePage Page
+    = LinkClicked Browser.UrlRequest
+    | UrlChanged Url.Url
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Navigate page ->
-            ( model, newUrl <| pageToHash page )
+        LinkClicked urlRequest ->
+            case urlRequest of
+                Browser.Internal url ->
+                    ( model, Nav.pushUrl model.key (Url.toString url) )
 
-        ChangePage page ->
-            ( { model | page = page }, Cmd.none )
+                Browser.External href ->
+                    ( model, Nav.load href )
 
-
-
--- view
-
-
-menu : Model -> Html Msg
-menu model =
-    header []
-        [ a [ onClick (Navigate LeaderBoard) ]
-            [ text "LeaderBoard" ]
-        , text " | "
-        , a [ onClick (Navigate AddRunner) ]
-            [ text "Add Runner" ]
-        , text " | "
-        , a [ onClick (Navigate Login) ]
-            [ text "Login" ]
-        ]
-
-
-viewPage : String -> Html Msg
-viewPage pageDescription =
-    div []
-        [ h3 [] [ text pageDescription ]
-        , p [] [ text <| "TODO: make " ++ pageDescription ]
-        ]
-
-
-view : Model -> Html Msg
-view model =
-    let
-        page =
-            case model.page of
-                LeaderBoard ->
-                    viewPage "LeaderBoard Page"
-
-                AddRunner ->
-                    viewPage "Add Runner Page"
-
-                Login ->
-                    viewPage "Login Page"
-
-                NotFound ->
-                    viewPage "Page Not Found"
-    in
-        div []
-            [ menu model
-            , hr [] []
-            , page
-            ]
+        UrlChanged url ->
+            ( { model | url = url }
+            , Cmd.none
+            )
 
 
 
--- subscription
+-- SUBSCRIPTIONS
 
 
 subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions _ =
     Sub.none
 
 
-pageToHash : Page -> String
-pageToHash page =
-    case page of
-        LeaderBoard ->
-            "#"
 
-        AddRunner ->
-            "#add"
-
-        Login ->
-            "#login"
-
-        NotFound ->
-            "#notfound"
+-- VIEW
 
 
-hashToPage : String -> Page
-hashToPage hash =
-    case hash of
-        "" ->
-            LeaderBoard
-
-        "#add" ->
-            AddRunner
-
-        "#login" ->
-            Login
-
-        _ ->
-            NotFound
-
-
-locationToMsg : Location -> Msg
-locationToMsg location =
-    location.hash
-        |> hashToPage
-        |> ChangePage
+view : Model -> Browser.Document Msg
+view model =
+    { title = "URL Interceptor"
+    , body =
+        [ text "The current URL is: "
+        , b [] [ text (Url.toString model.url) ]
+        , ul []
+            [ viewLink "/home"
+            , viewLink "/profile"
+            , viewLink "/reviews/the-century-of-the-self"
+            , viewLink "/reviews/public-opinion"
+            , viewLink "/reviews/shah-of-shahs"
+            ]
+        ]
+    }
 
 
-main : Program Never Model Msg
-main =
-    Navigation.program locationToMsg
-        { init = init
-        , update = update
-        , view = view
-        , subscriptions = subscriptions
-        }
+viewLink : String -> Html msg
+viewLink path =
+    li [] [ a [ href path ] [ text path ] ]
