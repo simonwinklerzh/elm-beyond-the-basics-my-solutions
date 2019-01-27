@@ -6,9 +6,10 @@ port module Main exposing (main)
 import Browser
 import Cmd.Extra exposing (addCmd, addCmds, withCmd, withCmds, withNoCmd)
 import Debug
-import Html exposing (Html, a, button, div, h1, input, p, span, text)
+import Html exposing (Html, a, button, div, h1, h2, input, p, span, text)
 import Html.Attributes exposing (checked, disabled, href, size, style, type_, value)
 import Html.Events exposing (onClick, onInput)
+import Json.Decode exposing (at, decodeString, string)
 import Json.Encode exposing (Value)
 import PortFunnel.WebSocket as WebSocket exposing (Response(..))
 import PortFunnels exposing (FunnelDict, Handler(..), State)
@@ -220,7 +221,10 @@ socketHandler response state mdl =
     in
     case response of
         WebSocket.MessageReceivedResponse { message } ->
-            { model | log = ("Received \"" ++ message ++ "\"") :: model.log }
+            { model
+                | log = ("Received \"" ++ message ++ "\"") :: model.log
+                , time = decodeTime message
+            }
                 |> withNoCmd
 
         WebSocket.ConnectedResponse r ->
@@ -306,6 +310,9 @@ view model =
         , style "border" "solid"
         ]
         [ h1 [] [ text "PortFunnel.WebSocket Example" ]
+        , h2
+            []
+            [ text ("The current server time is: " ++ model.time) ]
         , p []
             [ text " "
             , button
@@ -387,6 +394,12 @@ view model =
 subscriptions : Model -> Sub Msg
 subscriptions =
     PortFunnels.subscriptions Process
+
+
+decodeTime : String -> String
+decodeTime message =
+    decodeString (at [ "time" ] string) message
+        |> Result.withDefault "Error decoding time"
 
 
 main =
