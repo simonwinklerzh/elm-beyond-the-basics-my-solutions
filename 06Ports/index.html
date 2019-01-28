@@ -14,7 +14,7 @@
   <script src="https://www.gstatic.com/firebasejs/3.2.1/firebase.js"></script>
   <script src="appfb.js"></script>
   <script>
-    var app = Elm.Main.fullscreen();
+    var app = Elm.Main.init();
     app.ports.addCustomer.subscribe(function(customerName){
       console.log(customerName);
       addCustomer({name: customerName})
