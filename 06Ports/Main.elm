@@ -1,8 +1,10 @@
-port module Main exposing (..)
+port module Main exposing (main)
 
+import Browser
 import Html exposing (..)
-import Html.Events exposing (..)
 import Html.Attributes exposing (..)
+import Html.Events exposing (..)
+
 
 
 -- model
@@ -31,8 +33,8 @@ initModel =
     }
 
 
-init : ( Model, Cmd Msg )
-init =
+init : () -> ( Model, Cmd Msg )
+init _ =
     ( initModel, Cmd.none )
 
 
@@ -64,7 +66,7 @@ update msg model =
                 newCustomers =
                     customer :: model.customers
             in
-                ( { model | customers = newCustomers }, Cmd.none )
+            ( { model | customers = newCustomers }, Cmd.none )
 
 
 
@@ -105,6 +107,11 @@ view model =
         ]
 
 
+document : Model -> Browser.Document Msg
+document model =
+    Browser.Document "Hello World" [ view model ]
+
+
 
 -- subscription
 
@@ -127,11 +134,11 @@ port customerSaved : (String -> msg) -> Sub msg
 port newCustomer : (Customer -> msg) -> Sub msg
 
 
-main : Program Never Model Msg
+main : Program () Model Msg
 main =
-    Html.program
+    Browser.document
         { init = init
         , update = update
-        , view = view
+        , view = document
         , subscriptions = subscriptions
         }
