@@ -47,6 +47,7 @@ type Msg
     | SaveCustomer
     | CustomerSaved String
     | CustomerAdded Customer
+    | RemoveCustomer Customer
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -66,6 +67,18 @@ update msg model =
                 newCustomers =
                     customer :: model.customers
             in
+            ( { model
+                | customers = newCustomers
+                , nextId = model.nextId + 1
+              }
+            , Cmd.none
+            )
+
+        RemoveCustomer customer ->
+            let
+                newCustomers =
+                    List.filter (\c -> c.id /= customer.id) model.customers
+            in
             ( { model | customers = newCustomers }, Cmd.none )
 
 
@@ -76,7 +89,7 @@ update msg model =
 viewCustomer : Customer -> Html Msg
 viewCustomer customer =
     li []
-        [ i [ class "remove" ] []
+        [ i [ class "remove", onClick (RemoveCustomer customer) ] []
         , text customer.name
         ]
 
@@ -91,7 +104,7 @@ viewCustomers customers =
 
 viewCustomerForm : Model -> Html Msg
 viewCustomerForm model =
-    Html.form [ onSubmit (CustomerAdded (Customer "1" model.name)) ]
+    Html.form [ onSubmit (CustomerAdded (Customer (String.fromInt model.nextId) model.name)) ]
         [ input [ type_ "text", onInput NameInput, value model.name ] []
         , text <| Maybe.withDefault "" model.error
         , button [ type_ "submit" ] [ text "Save" ]
