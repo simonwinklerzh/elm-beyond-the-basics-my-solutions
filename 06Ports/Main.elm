@@ -91,7 +91,7 @@ viewCustomers customers =
 
 viewCustomerForm : Model -> Html Msg
 viewCustomerForm model =
-    Html.form [ onSubmit SaveCustomer ]
+    Html.form [ onSubmit (CustomerAdded (Customer "1" model.name)) ]
         [ input [ type_ "text", onInput NameInput, value model.name ] []
         , text <| Maybe.withDefault "" model.error
         , button [ type_ "submit" ] [ text "Save" ]
