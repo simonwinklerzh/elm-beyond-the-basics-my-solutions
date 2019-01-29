@@ -1,13 +1,14 @@
 'use strict';
 // Initialize Firebase
-// var config = {
-//   apiKey: "YOURAPIKEYHERE",
-//   authDomain: "YOURAUTHDOMAINHERE",
-//   databaseURL: "YOURURLHERE",
-//   storageBucket: "",
-// };
+var config = {
+  apiKey: "AIzaSyAz8tt6onua0maMOt0eN5uNkqswNzAMtxA",
+  authDomain: "customer-list-ef58e.firebaseapp.com",
+  databaseURL: "https://customer-list-ef58e.firebaseio.com",
+  projectId: "customer-list-ef58e",
+  storageBucket: "customer-list-ef58e.appspot.com",
+  messagingSenderId: "566249371650"
+};
 
-alert('Add firebase config, see README.md! (then remove this)');
 var app = firebase.initializeApp(config);
 var database = app.database();
 var CUSTOMERREFPATH = "customers"
