@@ -125,10 +125,22 @@ subscriptions model =
         ]
 
 
+
+-- outgoing port
+
+
 port addCustomer : String -> Cmd msg
 
 
+
+-- incoming port
+
+
 port customerSaved : (String -> msg) -> Sub msg
+
+
+
+-- incoming port
 
 
 port newCustomer : (Customer -> msg) -> Sub msg
