@@ -47,6 +47,8 @@ type Msg
     | SaveCustomer
     | CustomerSaved String
     | CustomerAdded Customer
+    | DeleteCustomer Customer
+    | CustomerDeleted Customer
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -68,6 +70,16 @@ update msg model =
             in
             ( { model | customers = newCustomers }, Cmd.none )
 
+        DeleteCustomer customer ->
+            ( model, deleteCustomer customer )
+
+        CustomerDeleted customer ->
+            let
+                newCustomers =
+                    List.filter (\current -> current.id /= customer.id) model.customers
+            in
+            ( { model | customers = newCustomers }, Cmd.none )
+
 
 
 -- view
@@ -76,7 +88,11 @@ update msg model =
 viewCustomer : Customer -> Html Msg
 viewCustomer customer =
     li []
-        [ i [ class "remove" ] []
+        [ i
+            [ class "remove"
+            , onClick (DeleteCustomer customer)
+            ]
+            []
         , text customer.name
         ]
 
@@ -122,6 +138,7 @@ subscriptions model =
     Sub.batch
         [ customerSaved CustomerSaved
         , newCustomer CustomerAdded
+        , customerDeleted CustomerDeleted
         ]
 
 
@@ -132,18 +149,20 @@ subscriptions model =
 port addCustomer : String -> Cmd msg
 
 
+port deleteCustomer : Customer -> Cmd msg
 
--- incoming port
+
+
+-- incoming ports
 
 
 port customerSaved : (String -> msg) -> Sub msg
 
 
-
--- incoming port
-
-
 port newCustomer : (Customer -> msg) -> Sub msg
+
+
+port customerDeleted : (Customer -> msg) -> Sub msg
 
 
 main : Program () Model Msg
