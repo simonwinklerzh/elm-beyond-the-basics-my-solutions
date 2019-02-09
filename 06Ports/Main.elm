@@ -20,7 +20,6 @@ type alias Model =
     { name : String
     , customers : List Customer
     , error : Maybe String
-    , nextId : Int
     }
 
 
@@ -29,7 +28,6 @@ initModel =
     { name = ""
     , customers = []
     , error = Nothing
-    , nextId = 1
     }
 
 
