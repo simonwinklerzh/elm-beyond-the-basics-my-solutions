@@ -20,6 +20,7 @@ type alias Model =
     { name : String
     , customers : List Customer
     , error : Maybe String
+    , editing : Maybe Customer
     }
 
 
@@ -28,6 +29,7 @@ initModel =
     { name = ""
     , customers = []
     , error = Nothing
+    , editing = Nothing
     }
 
 
@@ -47,6 +49,7 @@ type Msg
     | CustomerAdded Customer
     | DeleteCustomer Customer
     | CustomerDeleted Customer
+    | Edit Customer
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -78,28 +81,72 @@ update msg model =
             in
             ( { model | customers = newCustomers }, Cmd.none )
 
+        Edit customer ->
+            ( { model | editing = Just customer }, Cmd.none )
+
 
 
 -- view
 
 
-viewCustomer : Customer -> Html Msg
-viewCustomer customer =
+viewCustomer : Maybe Customer -> Customer -> Html Msg
+viewCustomer editingCustomer customer =
+    let
+        shouldDisableEdit =
+            case editingCustomer of
+                Just c ->
+                    if c.id == customer.id then
+                        False
+
+                    else
+                        True
+
+                Nothing ->
+                    False
+
+        shouldEnableInput =
+            case editingCustomer of
+                Just c ->
+                    if c.id == customer.id then
+                        True
+
+                    else
+                        False
+
+                Nothing ->
+                    False
+    in
     li []
         [ i
             [ class "remove"
             , onClick (DeleteCustomer customer)
             ]
             []
-        , text customer.name
+        , button
+            [ disabled shouldDisableEdit
+            , onClick (Edit customer)
+            ]
+            [ i
+                [ class "edit" ]
+                []
+            ]
+        , if shouldEnableInput then
+            input
+                [ value customer.name
+                , type_ "text"
+                ]
+                []
+
+          else
+            text customer.name
         ]
 
 
-viewCustomers : List Customer -> Html Msg
-viewCustomers customers =
+viewCustomers : List Customer -> Maybe Customer -> Html Msg
+viewCustomers customers editingCustomer =
     customers
         |> List.sortBy .id
-        |> List.map viewCustomer
+        |> List.map (viewCustomer editingCustomer)
         |> ul []
 
 
@@ -117,7 +164,7 @@ view model =
     div []
         [ h1 [] [ text "Customer List" ]
         , viewCustomerForm model
-        , viewCustomers model.customers
+        , viewCustomers model.customers model.editing
         ]
 
 
