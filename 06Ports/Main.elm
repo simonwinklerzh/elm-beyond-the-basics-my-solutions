@@ -16,20 +16,24 @@ type alias Customer =
     }
 
 
+type alias CustomerId =
+    String
+
+
 type alias Model =
     { name : String
+    , id : Maybe CustomerId
     , customers : List Customer
     , error : Maybe String
-    , editing : Maybe Customer
     }
 
 
 initModel : Model
 initModel =
     { name = ""
+    , id = Nothing
     , customers = []
     , error = Nothing
-    , editing = Nothing
     }
 
 
@@ -49,6 +53,7 @@ type Msg
     | CustomerAdded Customer
     | DeleteCustomer Customer
     | CustomerDeleted Customer
+    | CustomerChanged Customer
     | Edit Customer
 
 
@@ -59,7 +64,12 @@ update msg model =
             ( { model | name = name }, Cmd.none )
 
         SaveCustomer ->
-            ( model, addCustomer model.name )
+            case model.id of
+                Just id ->
+                    ( model, editCustomer (Customer id model.name) )
+
+                Nothing ->
+                    ( model, addCustomer model.name )
 
         CustomerSaved key ->
             ( { model | name = "" }, Cmd.none )
@@ -81,21 +91,47 @@ update msg model =
             in
             ( { model | customers = newCustomers }, Cmd.none )
 
+        CustomerChanged changedCustomer ->
+            let
+                newCustomers =
+                    List.map
+                        (\customer ->
+                            if customer.id == changedCustomer.id then
+                                { id = customer.id, name = changedCustomer.name }
+
+                            else
+                                customer
+                        )
+                        model.customers
+            in
+            ( { model
+                | customers = newCustomers
+                , name = ""
+                , id = Nothing
+              }
+            , Cmd.none
+            )
+
         Edit customer ->
-            ( { model | editing = Just customer }, Cmd.none )
+            ( { model
+                | id = Just customer.id
+                , name = customer.name
+              }
+            , Cmd.none
+            )
 
 
 
 -- view
 
 
-viewCustomer : Maybe Customer -> Customer -> Html Msg
-viewCustomer editingCustomer customer =
+viewCustomer : Model -> Customer -> Html Msg
+viewCustomer model customer =
     let
         shouldDisableEdit =
-            case editingCustomer of
-                Just c ->
-                    if c.id == customer.id then
+            case model.id of
+                Just id ->
+                    if id == customer.id then
                         False
 
                     else
@@ -105,9 +141,9 @@ viewCustomer editingCustomer customer =
                     False
 
         shouldEnableInput =
-            case editingCustomer of
-                Just c ->
-                    if c.id == customer.id then
+            case model.id of
+                Just id ->
+                    if id == customer.id then
                         True
 
                     else
@@ -131,29 +167,49 @@ viewCustomer editingCustomer customer =
                 []
             ]
         , if shouldEnableInput then
-            input
-                [ value customer.name
-                , type_ "text"
-                ]
+            span
                 []
+                [ input
+                    [ value model.name
+                    , onInput NameInput
+                    , type_ "text"
+                    ]
+                    []
+                , button
+                    [ type_ "button"
+                    , onClick SaveCustomer
+                    ]
+                    [ text "Save" ]
+                ]
 
           else
-            text customer.name
+            span
+                []
+                [ text customer.name ]
         ]
 
 
-viewCustomers : List Customer -> Maybe Customer -> Html Msg
-viewCustomers customers editingCustomer =
-    customers
+viewCustomers : Model -> Html Msg
+viewCustomers model =
+    model.customers
         |> List.sortBy .id
-        |> List.map (viewCustomer editingCustomer)
+        |> List.map (viewCustomer model)
         |> ul []
 
 
 viewCustomerForm : Model -> Html Msg
 viewCustomerForm model =
+    let
+        mainInputFieldValue =
+            case model.id of
+                Just id ->
+                    ""
+
+                Nothing ->
+                    model.name
+    in
     Html.form [ onSubmit SaveCustomer ]
-        [ input [ type_ "text", onInput NameInput, value model.name ] []
+        [ input [ type_ "text", onInput NameInput, value mainInputFieldValue ] []
         , text <| Maybe.withDefault "" model.error
         , button [ type_ "submit" ] [ text "Save" ]
         ]
@@ -164,7 +220,7 @@ view model =
     div []
         [ h1 [] [ text "Customer List" ]
         , viewCustomerForm model
-        , viewCustomers model.customers model.editing
+        , viewCustomers model
         ]
 
 
@@ -184,6 +240,7 @@ subscriptions model =
         [ customerSaved CustomerSaved
         , newCustomer CustomerAdded
         , customerDeleted CustomerDeleted
+        , customerChanged CustomerChanged
         ]
 
 
@@ -192,6 +249,9 @@ subscriptions model =
 
 
 port addCustomer : String -> Cmd msg
+
+
+port editCustomer : Customer -> Cmd msg
 
 
 port deleteCustomer : Customer -> Cmd msg
@@ -208,6 +268,9 @@ port newCustomer : (Customer -> msg) -> Sub msg
 
 
 port customerDeleted : (Customer -> msg) -> Sub msg
+
+
+port customerChanged : (Customer -> msg) -> Sub msg
 
 
 main : Program () Model Msg
