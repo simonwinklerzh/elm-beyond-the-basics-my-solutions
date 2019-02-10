@@ -103,11 +103,31 @@ update msg model =
                                 customer
                         )
                         model.customers
+
+                -- Check if this is the customer we are currently editing,
+                -- because another user might have edited another customer
+                -- in the meantime.
+                isCurrentlyEditedCustomer =
+                    model.id == Just changedCustomer.id
+
+                newName =
+                    if isCurrentlyEditedCustomer then
+                        ""
+
+                    else
+                        model.name
+
+                newId =
+                    if isCurrentlyEditedCustomer then
+                        Nothing
+
+                    else
+                        model.id
             in
             ( { model
                 | customers = newCustomers
-                , name = ""
-                , id = Nothing
+                , name = newName
+                , id = newId
               }
             , Cmd.none
             )
